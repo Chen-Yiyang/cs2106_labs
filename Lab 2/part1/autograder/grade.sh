@@ -11,7 +11,8 @@ num_qns=0
 num_students=0
 
 # Delete temporary files
-rm ./ref/*.out
+rm ./ref/*.out # .out for correct ans
+
 
 # Compile the reference program
 gcc ./ref/*.c -o $1
@@ -68,4 +69,7 @@ done
 
 # print total files marked.
 echo -e "\nProcessed $num_students files."
+
+# Delete temporary files
+rm ./subs/*/*.out # .out for submissions
     
