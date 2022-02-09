@@ -1,7 +1,8 @@
-./subs/A0285757B/utils.c:3:5: error: conflicting types for ‘sum’
-    3 | int sum(int sum_array[], int n) {
-      |     ^~~
-In file included from ./subs/A0285757B/utils.c:1:
-./subs/A0285757B/utils.h:2:8: note: previous declaration of ‘sum’ was here
-    2 | double sum(int [], int);
-      |        ^~~
+Test date and time: Wednesday, 09 February 22, 14:00:58
+
+Directory A0183741Y score 3 / 3
+Directory A0281754H score 2 / 3
+Directory A0285757B has a compile error.
+Directory A0285757B score 0 / 3
+
+Processed 3 files.

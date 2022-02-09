@@ -12,7 +12,7 @@ num_students=0
 
 # Delete temporary files
 rm ./ref/*.out # .out for correct ans
-
+rm ./results.out # remove previous results
 
 # Compile the reference program
 gcc ./ref/*.c -o $1
@@ -29,9 +29,9 @@ done
 #
 # Note: See Lab02Qn.pdf for format of output file. Marks will be deducted for missing elements.
 #
-echo -e "Test date and time: $(date +%A), $(date +"%d %B %y"), $(date +%T)\n"
+echo -e "Test date and time: $(date +%A), $(date +"%d %B %y"), $(date +%T)\n" >> results.out
 
-rm ./results.out # remove previous compile error log
+
 
 # Iterate over every submission directory
 for i in ./subs/*; do 
@@ -41,7 +41,7 @@ for i in ./subs/*; do
 
     # Compile C code
     # Print compile error message to output file
-    gcc $i/*.c -o "$i/$1" 2>> results.out
+    gcc $i/*.c -o "$i/$1" 2> errors.out
     # Generate output from C code using *.in files in ref
     marks=0
     
@@ -55,20 +55,20 @@ for i in ./subs/*; do
             filename_std="$i/$l.out"
             diff_res=$(diff $filename_ans $filename_std)
 
-            if [[ "$diff_res" ]]; then
+            if [[ "$diff_res" == "" ]]; then
                 let marks++
             fi
         done
     else
-        echo "Directory $j has a compile error."
+        echo "Directory $j has a compile error." >> results.out
     fi
 
     # print score for student
-    echo "Directory $j score $marks / $num_qns"
+    echo "Directory $j score $marks / $num_qns" >> results.out
 done
 
 # print total files marked.
-echo -e "\nProcessed $num_students files."
+echo -e "\nProcessed $num_students files." >> results.out
 
 # Delete temporary files
 rm ./subs/*/*.out # .out for submissions
