@@ -16,5 +16,12 @@ int main() {
     // WITHOUT using | and > from the shell.
     //
 
+    /* Ideas:
+     - parent can wait for child, so child is slow and parent is talk
+     - child write to pipe, parent read from pipe
+     - need one more overarching process managing everything (e.g. in the case of part 2e)
+     - remember to redirect final outputs
+    */
+
 }
 
