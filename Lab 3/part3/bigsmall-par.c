@@ -3,8 +3,10 @@
 #include <limits.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/shm.h>
 #include <sys/wait.h>
 #include "config.h"
+#include "barrier.h"
 
 #define NUM_PROCESSES  8
 
@@ -12,7 +14,7 @@ int main() {
 
     int vect[VECT_SIZE];
     int pid;
-    int largest[NUM_PROCESSES], smallest[NUM_PROCESSES];
+    int *largest, *smallest;
 
     float per_process_raw = (float) VECT_SIZE / NUM_PROCESSES;
     int per_process = (int) per_process_raw;
@@ -31,6 +33,17 @@ int main() {
     for(i=0; i<VECT_SIZE; i++) {
         vect[i] = rand();
     }
+
+
+    // create and attach shared memory for largest[] and smallest[]
+    int shmid_lar, shmid_sma;
+    shmid_lar = shmget(IPC_PRIVATE, NUM_PROCESSES * sizeof(int), IPC_CREAT | 0600);
+    shmid_sma = shmget(IPC_PRIVATE, NUM_PROCESSES * sizeof(int), IPC_CREAT | 0600);
+    largest = (int *) shmat(shmid_lar, NULL, 0);
+    smallest = (int *) shmat(shmid_sma, NULL, 0);
+
+    // init barrier
+    init_barrier(NUM_PROCESSES+1);
 
     for(i=0; i<NUM_PROCESSES; i++) {
         pid = fork();
@@ -58,10 +71,15 @@ int main() {
         largest[i] = big;
         smallest[i] = small;
 
+        reach_barrier();
+
     }
     else 
     {
         start = clock();
+
+        reach_barrier();
+
         for(j=0; j<NUM_PROCESSES; j++)
         {
             if(largest[j] > big)
@@ -81,6 +99,16 @@ int main() {
         // Clean up process table
         for(j=0; j<NUM_PROCESSES; j++)
             wait(NULL);
+        
+
+        // detach and destroy shared memory
+        shmdt(largest);
+        shmctl(shmid_lar, IPC_RMID, 0);
+        shmdt(smallest);
+        shmctl(shmid_sma, IPC_RMID, 0);
+
+        // destroy barrier
+        destroy_barrier(pid);
     }
 }
 
