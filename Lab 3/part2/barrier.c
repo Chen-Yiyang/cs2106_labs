@@ -18,6 +18,9 @@ void init_barrier(int numproc) {
 
     shmid_sem = shmget(IPC_PRIVATE, 2 * sizeof(sem_t), IPC_CREAT | 0600);
     shmid_cnt = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | 0600);
+    
+    printf("hi");
+    
     sem = (sem_t *) shmat(shmid_sem, NULL, 0);
     count = (int *) shmat(shmid_cnt, NULL, 0);
 
