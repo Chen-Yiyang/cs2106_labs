@@ -9,10 +9,12 @@ void dbprintf(char *format, ...);
 
 // You should modify this structure to hold
 // whatever you need to implement your
-// memory manager
+// memory manager. You can delete the
+// val field. It is only used for testlist.c
 
 typedef struct td {
-    size_t len;
+    int start;
+    int offset;
 } TData;
 
 

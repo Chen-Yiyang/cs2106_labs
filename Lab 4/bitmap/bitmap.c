@@ -38,8 +38,39 @@ void print_map(unsigned char *map, int len) {
 // Returns: Index to stretch of 0's of required length, -1 if no such stretch can be found
 
 long search_map(unsigned char *bitmap, int len, long num_zeroes) {
+    int i, j;
+    
+    int curr_start = -1;
+    int curr_sum = 0;
+
+    for (i = 0; i < len; i++) {
+        unsigned char word = bitmap[i];
+
+        for (j = 0; j < 8; j++) {
+            int tmp = (word >> (7 - j)) & 1;
+
+            if (tmp == 0) {
+                if (curr_start == -1) {
+                    curr_start = i * 8 + j;
+                }
+                curr_sum++;
+
+                if (curr_sum == num_zeroes) {
+                    return curr_start;
+                }
+            } else {
+                curr_start = -1;
+                curr_sum = 0;
+            }
+        }
+
+    }
+
+    // unable to fit
     return -1;
-} //main
+} 
+
+//main
 
 // Set map bits to 0 or 1 depending on whether value is non-zero
 // map = Bitmap, declared as an array of unsigned char
@@ -50,7 +81,38 @@ long search_map(unsigned char *bitmap, int len, long num_zeroes) {
 // Returns: Nothing
 
 void set_map(unsigned char *map, long start, long length, int value) {
+    int i;
+    
+    long word = start / 8;
+    long offset = start - word * 8;  // TODO: -1?
+
+    unsigned char mask = 0b10000000;
+    mask = mask >> offset;
+
+    for (i = 0; i < length; i++) {
+        if (value == 1) {
+            map[word] |= mask;
+        } else {
+            map[word] &= ~(mask);
+        }
+
+        // prepare for next one
+        if (i < length - 1) {
+            offset++;
+            mask = mask >> 1;
+
+            if (offset == 8) {
+                offset = 0;
+                word++;
+                mask = 0b10000000;
+            }
+
+        }
+    }
+
 }
+
+
 
 // IMPLEMENTED FOR YOU
 // Marks a stretch of bits as "1", representing allocated memory
