@@ -21,34 +21,33 @@ TNode *_memlist = NULL; // To maintain information about length
     - try to merge it with its prev, and its next
 */
 
-bool is_not_init;
-TNode *_used = NULL;
-TNode *_free = NULL;
+TNode *_list = NULL;
 
-TNode* make_partition(int, int);
+TNode* make_partition(int, int, int);
 void print_partition(TNode*);
 
 // Self-written utility functions
-TNode* make_partition(int idx, int size) {
+TNode* make_partition(int idx, int size, int is_free) {
     TData *data = (TData *) malloc(sizeof(TData));
     data->val = size;
+    data->is_free = is_free;
 
     TNode *node = make_node(idx, data);
 
     return node;
 }
 
-void print_memlist() {
-    printf("Free:");
-    process_list(_free, print_partition);
-
-    printf("Used:");
-    process_list(_used, print_partition);
-}
-
 void print_partition(TNode* node) {
-    printf("Start index: %d Length: %d\n", node->key, node->pdata->val);
+    printf("Status: %s Start index: %d Length: %d\n", 
+            (node->pdata->is_free) ? "FREE" : "ALLOCATED",
+            node->key, 
+            node->pdata->val);
 }
+
+void print_memlist() {
+    process_list(_list, print_partition);
+}
+
 
 // Do not change this. Used by the test harness.
 // You may however use this function in your code if necessary.
@@ -62,30 +61,40 @@ long get_index(void *ptr) {
 // Allocates size bytes of memory and returns a pointer
 // to the first byte.
 void *mymalloc(size_t size) {
-    // Do this once
-    if (is_not_init) {
-        is_not_init = false;
-
-        insert_node(&_free, make_partition(0, MEMSIZE), ASCENDING);
-        _used = NULL;
+    // initialise
+    if (_list == NULL) {
+        insert_node(&_list, make_partition(0, MEMSIZE, 1), ASCENDING);
     }
 
-    TNode* curr_node = _free;
+    //printf("Hey %p", _list);
+
+    TNode* curr_node = _list;
     int goal_size = size / sizeof(_heap[0]);
+
     while (curr_node != NULL) {
+        //printf("Hey %d", curr_node->key);
+
+        if (!curr_node->pdata->is_free) {
+            curr_node = curr_node->next;
+            continue;
+        }
+
         int part_idx = curr_node->key;
         int part_size = curr_node->pdata->val;
 
         if (part_size >= goal_size) {
             // TODO: create partition
-            TNode* new_part = make_partition(part_idx, goal_size);
-            insert_node(&_used, new_part, ASCENDING);
+            TNode* new_part = make_partition(part_idx, goal_size, 0);
             
             if (part_size == goal_size) {
-                delete_node(&_free, curr_node);
-            } else {
+                delete_node(&_list, curr_node);
+            } else { 
+                // deduct away allocated
                 curr_node->key = part_idx + goal_size;
+                curr_node->pdata->val -= goal_size; 
             }
+
+            insert_node(&_list, new_part, ASCENDING);
 
             return (char *) (&_heap[0] + part_idx);
 
@@ -101,25 +110,35 @@ void *mymalloc(size_t size) {
 
 // Frees memory pointer to by ptr.
 void myfree(void *ptr) {
-    TNode* curr_node_used = find_node(_used, get_index(ptr));
-    TNode* curr_node_free = make_partition(curr_node_used->key, curr_node_used->pdata->val);  // create a dup cuz the one in used will be deleted
+    if (ptr == NULL)
+        return; // fail silently
 
-    delete_node(&_used, curr_node_used);
-    insert_node(&_free, curr_node_free, ASCENDING);
+    TNode* curr_node = find_node(_list, get_index(ptr));
 
-    // Merge w. prev. and succ.
-    TNode* curr_node = curr_node_free; // create a dup in case the 1st one in free get deleted (merged)
-    TNode* prev_node = curr_node->prev;
-    if (prev_node->pdata->val == curr_node->key) {
-        curr_node = prev_node;
-        prev_node->pdata->val = curr_node_free->pdata->val;
-        merge_node(_free, curr_node_free, PRECEDING);
-    }
+    if (curr_node == NULL)
+        return; // fail silently
+
+    curr_node->pdata->is_free = 1;
+
+    int curr_end = curr_node->key + curr_node->pdata->val;
+
     TNode* succ_node = curr_node->next;
-    if (curr_node->pdata->val == succ_node->key) {
-        curr_node->pdata->val = succ_node->pdata->val;
-        merge_node(_free, curr_node, SUCCEEDING);
+    if (succ_node != NULL && succ_node != _list) {
+        if (succ_node->key == curr_end && succ_node->pdata->is_free) {
+            curr_node->pdata->val += succ_node->pdata->val;
+
+            merge_node(_list, curr_node, SUCCEEDING);
+        }
     }
 
+    TNode* prev_node = curr_node->prev;
+    if (prev_node != NULL && prev_node != curr_node) {
+        int prev_end = prev_node->key + prev_node->pdata->val;
+        if (prev_end == curr_node->key && prev_node->pdata->is_free) {
+            prev_node->pdata->val += curr_node->pdata->val;
+            merge_node(_list, curr_node, PRECEDING);
+        }
+    }
+    
 }
 
